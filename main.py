@@ -1,13 +1,10 @@
 import streamlit as st
 import fitz  # PyMuPDF
-from PIL import Image
-import io
 import os
-from openai import OpenAI
-import base64
-import instructor
 import requests
-from pydantic.main import BaseModel
+from bs4 import BeautifulSoup
+import time
+import random
 
 def save_uploaded_file(uploaded_file):
     try:
@@ -25,49 +22,50 @@ def save_uploaded_file(uploaded_file):
     except Exception as e:
         return None
 
-def pdf_to_images(pdf_path):
-    images = []
-    try:
-        # Open the PDF file
-        pdf_document = fitz.open(pdf_path)
+def extract_links_from_pdf(pdf_path):
+    # Open the PDF
+    document = fitz.open(pdf_path)
+    all_links = set()
 
-        # Iterate over each page
-        for page_num in range(len(pdf_document)):
-            page = pdf_document.load_page(page_num)
+    # Iterate over each page
+    for page_num in range(len(document)):
+        page = document.load_page(page_num)
+        links = page.get_links()
+        for link in links:
+            if 'uri' in link:
+                if 'track_id' in link['uri']:
+                    all_links.add(link['uri'])
 
-            # Get the pixmap (image) of the page
-            pix = page.get_pixmap()
+    return all_links
 
-            # Create an image from the pixmap
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            images.append(img)
+def MyRequest(url):
+    # Generate a random sleep duration between 2 to 3 seconds
+    sleep_duration = random.uniform(1, 2)
 
-            # Save the image to a directory
-            os.makedirs('pdf_images', exist_ok=True)
-            img.save(os.path.join('pdf_images', f'page_{page_num + 1}.png'))
+    # Sleep for the generated duration
+    time.sleep(sleep_duration)
+    headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "max-age=0",
+        "Cookie": "cook_autovisit=229fe602662a1f55c60e63af2c6d0aa4; _gcl_au=1.1.1518389169.1717424536; _mkto_trk=id:319-SAP-104&token:_mch-luminatedata.com-1717424536399-88663; _ga=GA1.1.2002600592.1717424538; addevent_track_cookie=35fcc815-71b7-49be-b842-4d6a69660ac9; cook_autologin=32e10156a031e64cc4c07d0c1a535751; _ga_3ESV50XWME=GS1.1.1717450761.1.1.1717451269.60.0.0; PHPSESSID=fcgbg4hfoobdgcn5vie57f3blc; home_page_tab=tab_dei; ci_session=VpjjbYZoEWGFXo7AEXLzld0FQ9UjY7y%2BcK19J3YsfQqWm5OSjZoAB%2BLmr%2F%2BIle3ijN3We1YTpu4wOZJrCt0XfrcO6zYziR1Fv8FZodv8xDmBBoKXOnt0dQqhyaYHTOKcZLuZGOuXRI9vUu0Y5rE5QSjEnH7gvGbL93JES%2B05NEv2tgL9XrAhaySUiwRQt1j3WvsLgBiCQthRRrrIJlOxJJm4Jwmwfv9U6xFz3x1y%2BfL%2Byv%2Bp9g9VwffsF4vDNFbAWx7JRp%2B0yGBFQvL%2FUnnUO%2BaNVS5GoOLsDGQAFZJBAoSrzvAXv%2F57gfe7K9UZfSUq%2BFHFrJvCZ4qaMgnmuurueP3%2BWk0eF80PNcrLiD%2FhswfWwaKUJ1jWc43Zfx2UDr0ld4U8j4h2MYlHy2QU4MAu%2B%2FP3aZZ3xVGNstBVAp1yG%2FM%3D; _dd_s=rum=1&id=f1b56134-19bf-42cf-bd2a-4473db8592e8&created=1717531035496&expire=1717531953976; OptanonConsent=isGpcEnabled=0&datestamp=Tue+Jun+04+2024+16%3A01%3A03+GMT-0400+(Eastern+Daylight+Time)&version=202310.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&landingPath=NotLandingPage&AwaitingReconsent=false&groups=C0002%3A1%2CC0004%3A1%2CC0001%3A1%2CC0003%3A1; _ga_PDQYBV3900=GS1.1.1717529140.11.1.1717531264.0.0.0; AWSALB=eCQ8nuMUkrg4Sw/VCkg9fsenbCrBFiUWm6zVeWFWC++er+BLGcDoSDCK1OTnDzX3tmlN1mwc/as1k032rmaW1oPRGdcLmte+xVaaoIOfQkF3KRkI4+lHX7yssO0q; AWSALBCORS=eCQ8nuMUkrg4Sw/VCkg9fsenbCrBFiUWm6zVeWFWC++er+BLGcDoSDCK1OTnDzX3tmlN1mwc/as1k032rmaW1oPRGdcLmte+xVaaoIOfQkF3KRkI4+lHX7yssO0q",
+        "Priority": "u=0, i",
+        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Linux"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
 
-        return images
-    except Exception as e:
-        st.error(f"Failed to convert PDF to images: {e}")
-        return []
+    # Make the request
+    response = requests.get(url, headers=headers)
 
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
-
-headers = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-}
-
-class RecordDetail(BaseModel):
-    TITLE: str
-    STUDIO: str
-    GENRE: str
-    ARENA: str
-    MODIFIED_ON: str
-    SEASON: str
-    STATUS: str
+    return response
 
 def main():
     st.title("PDF Upload and Save")
@@ -77,86 +75,50 @@ def main():
 
     if uploaded_file is not None:
         # Save the uploaded file to local storage
-        file_path = save_uploaded_file(uploaded_file)
+        pdf_path = save_uploaded_file(uploaded_file)
 
-        if file_path:
-            st.success(f"File saved successfully: {file_path}")
-            # Convert PDF to images
-            images = pdf_to_images(file_path)
+        if pdf_path:
+            st.success(f"File saved successfully: {pdf_path}")
+            links = extract_links_from_pdf(pdf_path)
+            result = ""
+            count = 0
+            for link in links:
+                response = MyRequest(link)
+                soup = BeautifulSoup(response.content, 'html.parser')
+                TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
+                data = soup.find('table', {'class': 'p18table1'}).find('tbody').find('tr').find_all('td')
+                STUDIO = ','.join([_.text.strip() for _ in data[0].find_all('a')])
+                GENRE = ','.join([_.text.strip() for _ in data[1].find_all('a')])
+                ARENA = ','.join([_.text.strip() for _ in data[2].find_all('a')])
+                MODIFIED_ON = data[3].text.strip()
+                SEASON = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'SEASON' in tag.get_text()).find('span').text.strip()
+                STATUS = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'STATUS' in tag.get_text()).find('span').text.strip()
+                data_cells = soup.find_all('div', {'class': 'p18rsec'})
+                NETWORKS = []
+                for data in data_cells:
+                    data = data.find_all('p')
+                    NETWORKS.append([data[0].find('a')['href'], data[1].text.strip(), data[-2].text.strip()])
+                record = TITLE
+                record += ' | ' + STUDIO
+                record += ' | ' + GENRE
+                record += ' | ' + ARENA
+                record += ' | ' + MODIFIED_ON
+                record += ' | ' + SEASON
+                record += ' | ' + STATUS
+                for index, NETWORK in enumerate(NETWORKS):
+                    link = 'https://filmandtv.luminatedata.com/' + NETWORK[0]
+                    response = MyRequest(link)
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    COMPANY = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
+                    record += ' | ' + COMPANY
+                    record += ' | ' + NETWORK[1]
+                    if index == 0:
+                        record += ' | ' + NETWORK[2]
+                count += 1
+                st.success('Successfully scraped: ' + str(count) + '/' + str(len(links)))
+                result = result + record + "\n"
 
-            for page in range(10):
-
-                image_path = f"pdf_images/page_{page + 2}.png"
-                base64_image = encode_image(image_path)
-
-                client = instructor.patch(OpenAI())
-
-                payload = {
-                    "model": "gpt-4-vision-preview",
-                    "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                        {
-                            "type": "text",
-                            "text": """
-                                This image is a sample report. Please provide the data in JSON format shown below witout any description.
-                                If there are multiple values for each field, seperate by ','.
-                                {
-                                    TITLE,
-                                    STUDIO,
-                                    GENRE,
-                                    ARENA,
-                                    MODIFIED_ON,
-                                    SEASON,
-                                    STATUS,
-                                    NETWORK,
-                                    TERRITORY,
-                                    SCHEDULE,
-                                    COCOMMISSION1,
-                                    COTERRITORY1,
-                                    COCOMMISSION2,
-                                    COTERRITORY2,
-                                    ...
-                                }
-                                The second row contains these values: TITLE, STUDIO, MODIFIED_ON.
-                                GENRE is data only from table at position (2,3), don't need information from others.
-                                ARENA is data only from table at position (2,4), don't need information from others.
-                                And the bottom row of each record table contains information on the season number.
-                                And the third row from the bottom of each record table contains information on the production status.
-                                Starting in the third row from the top of each record there are rows with information on the networks for the TV series.
-                                Networks are identified with logos. You should get NETWORK information from the logo.
-                                And you can get TERRITORY, SCHEDULE from thrid row.
-                                Many records will have additional rows with information about additional networks.  For example the first record contains three additional rows with network information. I would like to add additional fields as follows for these additional networks
-                            """
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                        ]
-                    }
-                    ],
-                    "max_tokens": 3000
-                }
-
-                response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-                response_json = response.json()
-                content = response_json['choices'][0]['message']['content']
-
-                st.text(content)
-
-                # record_detail = client.chat.completions.create(
-                #     model="gpt-4",
-                #     response_model=RecordDetail,
-                #     messages=[
-                #         {"role": "user", "content": "Extract TITLE, STUDIO, GENRE, ARENA, MODIFIED_ON, SEASON, STATUS from the following record description json:" + content},
-                #     ]
-                # )
-
-                # st.text(record_detail)
+            st.download_button(label="Download File", data=result, file_name='result.txt')
 
         else:
             st.error("Failed to save file")

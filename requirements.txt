@@ -3,3 +3,4 @@ pymupdf
 pillow
 openai
 instructor
+beautifulsoup4
