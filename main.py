@@ -85,14 +85,22 @@ def main():
             for link in links:
                 response = MyRequest(link)
                 soup = BeautifulSoup(response.content, 'html.parser')
+                SEASON = ''
+                STATUS = ''
                 TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                 data = soup.find('table', {'class': 'p18table1'}).find('tbody').find('tr').find_all('td')
                 STUDIO = ','.join([_.text.strip() for _ in data[0].find_all('a')])
                 GENRE = ','.join([_.text.strip() for _ in data[1].find_all('a')])
                 ARENA = ','.join([_.text.strip() for _ in data[2].find_all('a')])
                 MODIFIED_ON = data[3].text.strip()
-                SEASON = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'SEASON' in tag.get_text()).find('span').text.strip()
-                STATUS = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'STATUS' in tag.get_text()).find('span').text.strip()
+                try:
+                    SEASON = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'SEASON' in tag.get_text()).find('span').text.strip()
+                except:
+                    SEASON = ''
+                try:
+                    STATUS = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'STATUS' in tag.get_text()).find('span').text.strip()
+                except:
+                    STATUS = ''
                 data_cells = soup.find_all('div', {'class': 'p18rsec'})
                 NETWORKS = []
                 for data in data_cells:
