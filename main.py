@@ -5,6 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import random
+import json
+
+filename = 'store.json'
 
 def save_uploaded_file(uploaded_file):
     try:
@@ -38,9 +41,15 @@ def extract_links_from_pdf(pdf_path):
 
     return all_links
 
-def MyRequest(cookie, url):
-    # Generate a random sleep duration between 2 to 3 seconds
-    sleep_duration = random.uniform(1, 2)
+def MyRequest(cookie, url, type):
+    if type == 1:
+        store = {}
+        with open(filename, 'r') as file:
+            store = json.load(file)
+            if url in store:
+                return store[url]
+
+    sleep_duration = random.uniform(0.5, 1)
 
     # Sleep for the generated duration
     time.sleep(sleep_duration)
@@ -63,7 +72,11 @@ def MyRequest(cookie, url):
     }
 
     # Make the request
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers).content
+    store[url] = str(response)
+
+    with open(filename, 'w') as file:
+        json.dump(store, file, indent=4)
 
     return response
 
@@ -84,8 +97,11 @@ def main():
             result = ""
             count = 0
             for link in links:
-                response = MyRequest(cookie, link)
-                soup = BeautifulSoup(response.content, 'html.parser')
+                response = MyRequest(cookie, link, 1)
+                try:
+                    soup = BeautifulSoup(response, 'html.parser')
+                except:
+                    response = MyRequest(cookie, link, 2)
                 SEASON = ''
                 STATUS = ''
                 TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
@@ -116,8 +132,8 @@ def main():
                 record += ' | ' + STATUS
                 for index, NETWORK in enumerate(NETWORKS):
                     link = 'https://filmandtv.luminatedata.com/' + NETWORK[0]
-                    response = MyRequest(cookie, link)
-                    soup = BeautifulSoup(response.content, 'html.parser')
+                    response = MyRequest(cookie, link, 1)
+                    soup = BeautifulSoup(response, 'html.parser')
                     COMPANY = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                     record += ' | ' + COMPANY
                     record += ' | ' + NETWORK[1]
