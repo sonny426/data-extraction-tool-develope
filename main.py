@@ -98,14 +98,15 @@ def main():
             count = 0
             for link in links:
                 response = MyRequest(cookie, link, 1)
+                SEASON = ''
+                STATUS = ''
                 try:
                     soup = BeautifulSoup(response, 'html.parser')
+                    TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                 except:
                     response = MyRequest(cookie, link, 2)
                     soup = BeautifulSoup(response, 'html.parser')
-                SEASON = ''
-                STATUS = ''
-                TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
+                    TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                 data = soup.find('table', {'class': 'p18table1'}).find('tbody').find('tr').find_all('td')
                 STUDIO = ','.join([_.text.strip() for _ in data[0].find_all('a')])
                 GENRE = ','.join([_.text.strip() for _ in data[1].find_all('a')])
