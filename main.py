@@ -7,8 +7,6 @@ import time
 import random
 import json
 
-filename = 'store.json'
-
 def save_uploaded_file(uploaded_file):
     try:
         # Create a directory to store the uploaded file
@@ -41,14 +39,7 @@ def extract_links_from_pdf(pdf_path):
 
     return all_links
 
-def MyRequest(cookie, url, type):
-    if type == 1:
-        store = {}
-        with open(filename, 'r') as file:
-            store = json.load(file)
-            if url in store:
-                return store[url]
-
+def MyRequest(cookie, url):
     sleep_duration = random.uniform(0.5, 1)
 
     # Sleep for the generated duration
@@ -73,17 +64,13 @@ def MyRequest(cookie, url, type):
 
     # Make the request
     response = requests.get(url, headers=headers).content
-    store[url] = str(response)
-
-    with open(filename, 'w') as file:
-        json.dump(store, file, indent=4)
-
     return response
 
 def main():
     st.title("PDF Upload and Save")
 
     cookie = st.text_input('Enter your cookie:')
+    skip = st.number_input("Enter a number of skip record:", value=0)
     # File uploader allows only PDF files
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
@@ -97,16 +84,14 @@ def main():
             result = ""
             count = 0
             for link in links:
-                response = MyRequest(cookie, link, 1)
+                if count < skip:
+                    count += 1
+                    continue
+                response = MyRequest(cookie, link)
                 SEASON = ''
                 STATUS = ''
-                try:
-                    soup = BeautifulSoup(response, 'html.parser')
-                    TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
-                except:
-                    response = MyRequest(cookie, link, 2)
-                    soup = BeautifulSoup(response, 'html.parser')
-                    TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
+                soup = BeautifulSoup(response, 'html.parser')
+                TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                 data = soup.find('table', {'class': 'p18table1'}).find('tbody').find('tr').find_all('td')
                 STUDIO = ','.join([_.text.strip() for _ in data[0].find_all('a')])
                 GENRE = ','.join([_.text.strip() for _ in data[1].find_all('a')])
@@ -134,7 +119,7 @@ def main():
                 record += ' | ' + STATUS
                 for index, NETWORK in enumerate(NETWORKS):
                     link = 'https://filmandtv.luminatedata.com/' + NETWORK[0]
-                    response = MyRequest(cookie, link, 1)
+                    response = MyRequest(cookie, link)
                     soup = BeautifulSoup(response, 'html.parser')
                     COMPANY = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                     record += ' | ' + COMPANY
@@ -145,7 +130,7 @@ def main():
                 st.success('Successfully scraped: ' + str(count) + '/' + str(len(links)))
                 result = result + record + "\n"
 
-            st.download_button(label="Download File", data=result, file_name='result.txt')
+                st.download_button(label="Download File " + str(count), data=result, file_name='result.txt')
 
         else:
             st.error("Failed to save file")
