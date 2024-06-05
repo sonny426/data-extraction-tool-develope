@@ -102,6 +102,7 @@ def main():
                     soup = BeautifulSoup(response, 'html.parser')
                 except:
                     response = MyRequest(cookie, link, 2)
+                    soup = BeautifulSoup(response, 'html.parser')
                 SEASON = ''
                 STATUS = ''
                 TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
