@@ -90,13 +90,23 @@ def main():
                 response = MyRequest(cookie, link)
                 SEASON = ''
                 STATUS = ''
+                STUDIO = ''
+                GENRE = ''
+                ARENA = ''
+                MODIFIED_ON = ''
                 soup = BeautifulSoup(response, 'html.parser')
                 TITLE = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                 data = soup.find('table', {'class': 'p18table1'}).find('tbody').find('tr').find_all('td')
-                STUDIO = ','.join([_.text.strip() for _ in data[0].find_all('a')])
-                GENRE = ','.join([_.text.strip() for _ in data[1].find_all('a')])
-                ARENA = ','.join([_.text.strip() for _ in data[2].find_all('a')])
-                MODIFIED_ON = data[3].text.strip()
+                try:
+                    STUDIO = ','.join([_.text.strip() for _ in data[0].find_all('a')])
+                    GENRE = ','.join([_.text.strip() for _ in data[1].find_all('a')])
+                    ARENA = ','.join([_.text.strip() for _ in data[2].find_all('a')])
+                    MODIFIED_ON = data[3].text.strip()
+                except:
+                    STUDIO = ''
+                    GENRE = ''
+                    ARENA = ''
+                    MODIFIED_ON = ''
                 try:
                     SEASON = soup.find('div', {'class': 'prd-detailsleft'}).find(lambda tag: 'SEASON' in tag.get_text()).find('span').text.strip()
                 except:
@@ -109,7 +119,10 @@ def main():
                 NETWORKS = []
                 for data in data_cells:
                     data = data.find_all('p')
-                    NETWORKS.append([data[0].find('a')['href'], data[1].text.strip(), data[-2].text.strip()])
+                    try:
+                        NETWORKS.append([data[0].find('a')['href'], data[1].text.strip(), data[-2].text.strip()])
+                    except:
+                        continue
                 record = TITLE
                 record += ' | ' + STUDIO
                 record += ' | ' + GENRE
@@ -118,14 +131,17 @@ def main():
                 record += ' | ' + SEASON
                 record += ' | ' + STATUS
                 for index, NETWORK in enumerate(NETWORKS):
-                    link = 'https://filmandtv.luminatedata.com/' + NETWORK[0]
-                    response = MyRequest(cookie, link)
-                    soup = BeautifulSoup(response, 'html.parser')
-                    COMPANY = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
-                    record += ' | ' + COMPANY
-                    record += ' | ' + NETWORK[1]
-                    if index == 0:
-                        record += ' | ' + NETWORK[2]
+                    try:
+                        link = 'https://filmandtv.luminatedata.com/' + NETWORK[0]
+                        response = MyRequest(cookie, link)
+                        soup = BeautifulSoup(response, 'html.parser')
+                        COMPANY = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
+                        record += ' | ' + COMPANY
+                        record += ' | ' + NETWORK[1]
+                        if index == 0:
+                            record += ' | ' + NETWORK[2]
+                    except:
+                        continue
                 count += 1
                 st.success('Successfully scraped: ' + str(count) + '/' + str(len(links)))
                 result = result + record + "\n"
