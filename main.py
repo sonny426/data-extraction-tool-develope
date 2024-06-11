@@ -120,7 +120,11 @@ def main():
                 for data in data_cells:
                     data = data.find_all('p')
                     try:
-                        NETWORKS.append([data[0].find('a')['href'], data[1].text.strip(), data[-2].text.strip()])
+                        for b_tag in data[2].find_all('b'):
+                            b_tag.decompose()
+                        for br_tag in data[2].find_all('br'):
+                            br_tag.decompose()
+                        NETWORKS.append([data[0].find('a')['href'], data[1].text.strip(), data[2].text.strip(), data[-2].text.strip()])
                     except:
                         continue
                 record = TITLE
@@ -138,8 +142,12 @@ def main():
                         COMPANY = soup.find('div', {'class': 'new-header-wrap-2'}).find('h1').text.strip()
                         record += ' | ' + COMPANY
                         record += ' | ' + NETWORK[1]
+                        record += ' | ' + NETWORK[2]
                         if index == 0:
-                            record += ' | ' + NETWORK[2]
+                            if NETWORK[3][0] >= '0' and NETWORK[3][0] <= '9':
+                                record += ' | ' + NETWORK[3]
+                            else:
+                                record += ' | .'
                     except:
                         continue
                 count += 1
